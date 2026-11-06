@@ -1,5 +1,5 @@
 [project]
-name = "zdfn1172"
+name = "quxian"
 version = "1.0.0"
 requires-python = ">=3.10"
 dependencies = ["flet"]
