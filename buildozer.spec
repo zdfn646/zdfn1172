@@ -9,6 +9,5 @@ requirements = python3,kivy
 orientation = landscape
 fullscreen = 1
 
-android.accept_sdk_license = True
 android.api = 31
 android.minapi = 21
