@@ -23,7 +23,9 @@ jobs:
 
       - name: Build APK
         run: |
-          flet build apk --project quxian --org com.mycompany --product "曲线行驶"
+                - name: Build APK
+        run: |
+          flet build apk --project quxian --org com.mycompany --product "曲线行驶" -y
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
