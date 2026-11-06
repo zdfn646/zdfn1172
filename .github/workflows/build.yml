@@ -20,24 +20,26 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
-          
-      - name: Install Buildozer
-        run: |
           python -m pip install --upgrade pip
           pip install buildozer cython==0.29.36
 
-      # ★ 核心修复：提前写好协议文件，绕过询问
-      - name: Pre-accept Android Licenses
+      - name: Setup Android SDK Command-line Tools
         run: |
-          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          # 手动创建完整的 SDK 目录结构并写入最新版 sdkmanager
+          export SDK_DIR="$HOME/.buildozer/android/platform/android-sdk"
+          mkdir -p $SDK_DIR/cmdline-tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline.zip
+          unzip -q cmdline.zip -d $SDK_DIR/cmdline-tools
+          mv $SDK_DIR/cmdline-tools/cmdline-tools $SDK_DIR/cmdline-tools/latest
+          
+          # 自动同意所有的 SDK 许可协议，防止卡住（忽略潜在的中断报错）
+          yes | $SDK_DIR/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
 
       - name: Build with Buildozer
         run: |
           # 禁用交互提示
           export BUILDOZER_WARN_ON_ROOT=0
-          # 去掉 yes | 直接运行
+          # 直接开始打包
           buildozer -v android debug
 
       - name: Upload APK
@@ -45,4 +47,3 @@ jobs:
         with:
           name: kivy-apk
           path: bin/*.apk
-
