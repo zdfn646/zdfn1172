@@ -1,32 +1,25 @@
-name: Build Flet App
+name: Build Kivy APK
 
 on:
   push:
   workflow_dispatch:
 
 jobs:
-  build-apk:
+  build-android:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Build APK with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
         with:
-          python-version: '3.12'
-
-      - name: Install Flet
-        run: |
-          python -m pip install --upgrade pip
-          pip install flet
-
-      - name: Build APK
-        run: |
-          flet build apk --project quxian --org com.mycompany --product "曲线行驶" --yes
+          command: buildozer android debug
+          buildozer_version: stable
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: quxian-apk
-          path: build/apk/*.apk
+          name: quxian-kivy-apk
+          path: ${{ steps.buildozer.outputs.filename }}
