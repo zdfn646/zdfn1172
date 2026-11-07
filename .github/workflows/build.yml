@@ -1,4 +1,3 @@
-
 name: Build Kivy APK
 
 on:
@@ -39,7 +38,6 @@ jobs:
           mkdir -p ~/.buildozer/android/platform
           git clone -b master --single-branch https://gitee.com/mirrors_kivy/python-for-android.git ~/.buildozer/android/platform/python-for-android
 
-          # 暴力替换源码为国内镜像
           sed -i "s|https://github.com/python/cpython/archive/refs/tags/v{version}.tar.gz|https://registry.npmmirror.com/-/binary/python/{version}/Python-{version}.tgz|" ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/hostpython3/__init__.py
           sed -i "s|https://github.com/python/cpython/archive/refs/tags/v{version}.tar.gz|https://registry.npmmirror.com/-/binary/python/{version}/Python-{version}.tgz|" ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/python3/__init__.py
           sed -i "s|https://github.com/libffi/libffi/releases/download/v{version}/libffi-{version}.tar.gz|https://mirrors.huaweicloud.com/libffi/libffi-{version}.tar.gz|" ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
@@ -47,13 +45,15 @@ jobs:
 
       - name: Build with Buildozer
         run: |
+          # ★ 核心修复：强行切换为 Java 17，解决 Gradle 报错
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          export PATH=$JAVA_HOME/bin:$PATH
+          
           rm -rf ~/.buildozer/android/platform/apache-ant-1.9.4
           ln -sf /usr/share/ant ~/.buildozer/android/platform/apache-ant-1.9.4
           rm -rf .buildozer
           
           export BUILDOZER_WARN_ON_ROOT=1
-          
-          # ★ 核心修复：保存日志，如果失败自动提取 Error 打印出来
           buildozer -v android debug > build.log 2>&1 || (echo "=== 捕捉到的真实错误 ===" && grep -i -B 5 -A 10 "error\|exception" build.log | tail -n 50 && exit 1)
 
       - name: Upload APK
