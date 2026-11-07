@@ -1,3 +1,4 @@
+
 name: Build Kivy APK
 
 on:
@@ -28,26 +29,20 @@ jobs:
 
       - name: Setup SDK & Force China Mirrors
         run: |
-          # 1. 直接使用云端预装的 Android SDK
           echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
           echo "ANDROIDSDK=/usr/local/lib/android/sdk" >> $GITHUB_ENV
           echo "ANDROIDNDK=/usr/local/lib/android/sdk/ndk/25.1.8937393" >> $GITHUB_ENV
           
-          # 同意协议
           printf 'y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n' | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
 
-          # 2. 手动克隆 p4a 源码（使用 Gitee 国内镜像）
           mkdir -p ~/.buildozer/android/platform
           git clone -b master --single-branch https://gitee.com/mirrors_kivy/python-for-android.git ~/.buildozer/android/platform/python-for-android
 
-          # 3. 暴力替换所有致命依赖的下载链接为国内镜像（彻底断绝连外网失败的问题）
-          # 替换 Python 源码为淘宝镜像
+          # 暴力替换源码为国内镜像
           sed -i "s|https://github.com/python/cpython/archive/refs/tags/v{version}.tar.gz|https://registry.npmmirror.com/-/binary/python/{version}/Python-{version}.tgz|" ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/hostpython3/__init__.py
           sed -i "s|https://github.com/python/cpython/archive/refs/tags/v{version}.tar.gz|https://registry.npmmirror.com/-/binary/python/{version}/Python-{version}.tgz|" ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/python3/__init__.py
-          # 替换 Libffi 为华为云镜像
           sed -i "s|https://github.com/libffi/libffi/releases/download/v{version}/libffi-{version}.tar.gz|https://mirrors.huaweicloud.com/libffi/libffi-{version}.tar.gz|" ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
-          # 替换 OpenSSL 为华为云镜像
           sed -i "s|https://www.openssl.org/source/openssl-{version}.tar.gz|https://mirrors.huaweicloud.com/openssl/source/openssl-{version}.tar.gz|" ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/openssl/__init__.py
 
       - name: Build with Buildozer
@@ -57,7 +52,9 @@ jobs:
           rm -rf .buildozer
           
           export BUILDOZER_WARN_ON_ROOT=1
-          buildozer -v android debug
+          
+          # ★ 核心修复：保存日志，如果失败自动提取 Error 打印出来
+          buildozer -v android debug > build.log 2>&1 || (echo "=== 捕捉到的真实错误 ===" && grep -i -B 5 -A 10 "error\|exception" build.log | tail -n 50 && exit 1)
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
