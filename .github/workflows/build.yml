@@ -22,26 +22,18 @@ jobs:
           sudo apt update
           sudo apt install -y git zip unzip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev libltdl-dev
 
-      - name: Fix SDK paths & Licenses
-        run: |
-          sudo mkdir -p /usr/local/lib/android/sdk/tools/bin
-          sudo ln -sf /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager /usr/local/lib/android/sdk/tools/bin/sdkmanager || true
-          sudo ln -sf /usr/local/lib/android/sdk/cmdline-tools/latest/bin/avdmanager /usr/local/lib/android/sdk/tools/bin/avdmanager || true
-          yes | sudo /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
-
       - name: Install Buildozer and Cython
         run: |
           python3 -m pip install --upgrade pip
-          # 必须锁定 0.29.36，这是 Kivy 编译的硬性要求
           pip3 install buildozer cython==0.29.36
 
       - name: Build with Buildozer
         run: |
-          export BUILDOZER_WARN_ON_ROOT=1
-          # ★ 彻底清理所有的旧缓存，防止它下载旧的 Python 包
+          # 暴力清理所有缓存，确保全新的构建环境
           rm -rf ~/.buildozer
           rm -rf .buildozer
           
+          # 直接打包，让它自己处理 SDK/NDK
           buildozer -v android debug
 
       - name: Upload APK
