@@ -9,5 +9,7 @@ requirements = python3,kivy
 orientation = landscape
 fullscreen = 1
 
-android.api = 31
-android.minapi = 21
+# 关键修复：指定稳定的 NDK 和 SDK 版本，并自动同意协议
+android.accept_sdk_license = True
+android.ndk = 25b
+android.sdk = 33
