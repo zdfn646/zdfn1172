@@ -5,20 +5,16 @@ package.domain = com.mycompany
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 1.0.0
-
-# 核心依赖
 requirements = python3,kivy
-
-# 屏幕配置
 orientation = landscape
 fullscreen = 1
 
-# Android 基础配置
 android.accept_sdk_license = True
 android.api = 33
 android.minapi = 24
 android.ndk = 25b
 android.archs = arm64-v8a
-
-# 让 p4a 强制使用最新稳定分支，避免旧版本 Bug
 p4a.branch = develop
+
+# ★ 核心修复：强制指定我们自己下载好的 SDK 路径
+android.sdk_path = /home/runner/android-sdk
