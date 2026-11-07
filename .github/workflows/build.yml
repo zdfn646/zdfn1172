@@ -17,11 +17,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # ★ 安装所有可能缺失的底层编译工具
       - name: Install System Dependencies
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev libltdl-dev
+          sudo apt install -y git zip unzip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev libltdl-dev
 
       - name: Fix SDK paths & Licenses
         run: |
@@ -33,24 +32,21 @@ jobs:
       - name: Install Buildozer and Cython
         run: |
           python3 -m pip install --upgrade pip
-          # 必须锁定 0.29.36，这是 Kivy 构建的硬性要求
+          # 必须锁定 0.29.36，这是 Kivy 编译的硬性要求
           pip3 install buildozer cython==0.29.36
 
       - name: Build with Buildozer
         run: |
           export BUILDOZER_WARN_ON_ROOT=1
-          # 强制环境变量覆盖
-          export ANDROIDSDK=/usr/local/lib/android/sdk
-          export ANDROIDNDK=/usr/local/lib/android/sdk/ndk/25.1.8937393
-          export ANDROIDAPI=33
-          export ANDROIDMINAPI=24
+          # ★ 彻底清理所有的旧缓存，防止它下载旧的 Python 包
+          rm -rf ~/.buildozer
+          rm -rf .buildozer
           
-          # 清理残留后重新打包
-          rm -rf ~/.buildozer/android/platform/
-          buildozer android debug
+          buildozer -v android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: quxian-kivy-apk
           path: bin/*.apk
+    
