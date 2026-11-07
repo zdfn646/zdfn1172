@@ -7,26 +7,24 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
-    # ★ 核心修复：直接使用 Kivy 官方提供的稳定 Docker 镜像
-    container:
-      image: kivy/buildozer:2023.9.16
-      options: --user root
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ★ 核心步骤：使用社区维护的 Buildozer Action
       - name: Build with Buildozer
-        run: |
-          # 在官方纯净容器内直接打包，无需折腾任何路径
-          buildozer -v android debug
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          # 指定打包命令
+          command: buildozer android debug
+          # 指定 Buildozer 版本，'stable' 代表最新稳定版
+          buildozer_version: stable
 
-      - name: Fix APK permissions
-        run: |
-          chmod -R 777 bin/
-
+      # 上传生成的 APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: quxian-kivy-apk
-          path: bin/*.apk
+          # 这个 Action 会自动提供 APK 的路径
+          path: ${{ steps.buildozer.outputs.filename }}
