@@ -11,23 +11,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
-          python-version: '3.10'
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Install System Dependencies
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
-          pip3 install --user --upgrade buildozer cython virtualenv
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
+          
+      - name: Install Buildozer and Cython
+        run: |
+          python3 -m pip install --upgrade pip
+          # 锁定 Cython 0.29.36，这是 Kivy 兼容性最好的版本，绝对不能装最新的 3.x
+          pip3 install buildozer cython==0.29.36
 
       - name: Build with Buildozer
         run: |
+          # 移除 yes |，直接运行，环境变量会自动确认协议
           export BUILDOZER_WARN_ON_ROOT=1
-          # yes | 用于自动回答打包过程中的 [y/N] 提示
-          yes | buildozer android debug
+          buildozer -v android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
