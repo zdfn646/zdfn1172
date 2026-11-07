@@ -20,7 +20,8 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev libltdl-dev
+          # ★ 顺便用 apt 把 ant 也装上，防止后面网络抽风
+          sudo apt install -y git zip unzip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev libltdl-dev ant
 
       - name: Install Buildozer and Cython
         run: |
@@ -29,11 +30,13 @@ jobs:
 
       - name: Build with Buildozer
         run: |
-          # 暴力清理所有缓存，确保全新的构建环境
           rm -rf ~/.buildozer
           rm -rf .buildozer
           
-          # 直接打包，让它自己处理 SDK/NDK
+          # ★ 建立软链接，让 Buildozer 以为它已经下载好 ANT 了
+          mkdir -p ~/.buildozer/android/platform
+          ln -sf /usr/share/ant ~/.buildozer/android/platform/apache-ant-1.9.4 || true
+          
           buildozer -v android debug
 
       - name: Upload APK
@@ -41,4 +44,3 @@ jobs:
         with:
           name: quxian-kivy-apk
           path: bin/*.apk
-    
