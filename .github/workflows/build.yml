@@ -26,31 +26,37 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install buildozer cython==0.29.36
 
-      # ★ 核心修复：直接使用 GitHub 云端自带的 SDK，并自动接受协议
-      - name: Configure System Android SDK
+      - name: Setup SDK & Force China Mirrors
         run: |
+          # 1. 直接使用云端预装的 Android SDK
           echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
           echo "ANDROIDSDK=/usr/local/lib/android/sdk" >> $GITHUB_ENV
           echo "ANDROIDNDK=/usr/local/lib/android/sdk/ndk/25.1.8937393" >> $GITHUB_ENV
           
-          # 接受许可
+          # 同意协议
           printf 'y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n' | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+
+          # 2. 手动克隆 p4a 源码（使用 Gitee 国内镜像）
+          mkdir -p ~/.buildozer/android/platform
+          git clone -b master --single-branch https://gitee.com/mirrors_kivy/python-for-android.git ~/.buildozer/android/platform/python-for-android
+
+          # 3. 暴力替换所有致命依赖的下载链接为国内镜像（彻底断绝连外网失败的问题）
+          # 替换 Python 源码为淘宝镜像
+          sed -i "s|https://github.com/python/cpython/archive/refs/tags/v{version}.tar.gz|https://registry.npmmirror.com/-/binary/python/{version}/Python-{version}.tgz|" ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/hostpython3/__init__.py
+          sed -i "s|https://github.com/python/cpython/archive/refs/tags/v{version}.tar.gz|https://registry.npmmirror.com/-/binary/python/{version}/Python-{version}.tgz|" ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/python3/__init__.py
+          # 替换 Libffi 为华为云镜像
+          sed -i "s|https://github.com/libffi/libffi/releases/download/v{version}/libffi-{version}.tar.gz|https://mirrors.huaweicloud.com/libffi/libffi-{version}.tar.gz|" ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py
+          # 替换 OpenSSL 为华为云镜像
+          sed -i "s|https://www.openssl.org/source/openssl-{version}.tar.gz|https://mirrors.huaweicloud.com/openssl/source/openssl-{version}.tar.gz|" ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/openssl/__init__.py
 
       - name: Build with Buildozer
         run: |
-          rm -rf ~/.buildozer
+          rm -rf ~/.buildozer/android/platform/apache-ant-1.9.4
+          ln -sf /usr/share/ant ~/.buildozer/android/platform/apache-ant-1.9.4
           rm -rf .buildozer
           
           export BUILDOZER_WARN_ON_ROOT=1
-          
-          # 建立 ant 软链接，防止 Buildozer 去外网下载
-          mkdir -p ~/.buildozer/android/platform
-          ln -sf /usr/share/ant ~/.buildozer/android/platform/apache-ant-1.9.4
-          
-          # 强制云端使用国内的 Gitee 镜像下载 p4a 源码
-          sed -i "s|url = 'https://github.com/kivy/python-for-android.git'|url = 'https://gitee.com/mirrors/python-for-android.git'|" $(pip3 show buildozer | grep Location | awk '{print $2}')/buildozer/targets/android.py || true
-          
           buildozer -v android debug
 
       - name: Upload APK
