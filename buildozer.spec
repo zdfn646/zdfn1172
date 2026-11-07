@@ -5,11 +5,13 @@ package.domain = com.mycompany
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 1.0.0
-requirements = python3,kivy
+
+# ★ 核心修复：强制锁定稳定版本，拒绝 Python 3.14
+requirements = python3==3.10.12,hostpython3==3.10.12,kivy==2.3.0
+
 orientation = landscape
 fullscreen = 1
 
-# 使用清华源加速 Python 依赖包下载
 pypi_mirror = https://pypi.tuna.tsinghua.edu.cn/simple
 
 android.accept_sdk_license = True
