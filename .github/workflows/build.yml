@@ -22,15 +22,20 @@ jobs:
           sudo apt update
           sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
           
+      # ★ 核心修复：建个快捷方式，让老版本的 Buildozer 能找到 sdkmanager
+      - name: Fix SDK paths
+        run: |
+          sudo mkdir -p /usr/local/lib/android/sdk/tools/bin
+          sudo ln -sf /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager /usr/local/lib/android/sdk/tools/bin/sdkmanager || true
+          sudo ln -sf /usr/local/lib/android/sdk/cmdline-tools/latest/bin/avdmanager /usr/local/lib/android/sdk/tools/bin/avdmanager || true
+
       - name: Install Buildozer and Cython
         run: |
           python3 -m pip install --upgrade pip
-          # 锁定 Cython 0.29.36，这是 Kivy 兼容性最好的版本，绝对不能装最新的 3.x
           pip3 install buildozer cython==0.29.36
 
       - name: Build with Buildozer
         run: |
-          # 移除 yes |，直接运行，环境变量会自动确认协议
           export BUILDOZER_WARN_ON_ROOT=1
           buildozer -v android debug
 
