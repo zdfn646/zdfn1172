@@ -12,30 +12,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ★ 缓存 Buildozer 全局和本地目录，加速后续构建
-      - name: Cache Buildozer global directory
-        uses: actions/cache@v4
-        with:
-          path: ~/.buildozer
-          key: buildozer-global-${{ hashFiles('buildozer.spec') }}
+      # 1. 安装系统依赖 (Buildozer 运行所需的编译工具)
+      - name: Install System Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
 
-      - name: Cache Buildozer local directory
-        uses: actions/cache@v4
-        with:
-          path: .buildozer
-          key: buildozer-local-${{ hashFiles('buildozer.spec') }}
+      # 2. 安装 Buildozer 和固定版本的 Cython (避免版本兼容性问题)
+      - name: Install Buildozer and Cython
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install buildozer cython==0.29.36
 
-      # ★ 使用社区维护的 Docker Action，环境更纯净、稳定
+      # 3. 执行打包命令
       - name: Build with Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
-        with:
-          command: buildozer android debug
-          buildozer_version: stable
+        run: |
+          # 设置环境变量，避免在非交互模式下构建失败
+          export BUILDOZER_WARN_ON_ROOT=1
+          buildozer android debug
 
-      # ★ 上传构建产物 (.apk 文件)[reference:11]
+      # 4. 上传生成的 APK 文件
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: quxian-kivy-apk
-          path: ${{ steps.buildozer.outputs.filename }}
+          path: bin/*.apk
