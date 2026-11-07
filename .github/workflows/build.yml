@@ -35,8 +35,9 @@ jobs:
           
           export PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH
           
-          # ★ 加上 || true 防止 Broken pipe 报错
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          # ★ 终极修复：不用 yes，手动喂 10 个 y，彻底避开 Broken pipe 报错！
+          printf 'y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n' | sdkmanager --licenses > /dev/null 2>&1 || true
+          
           sdkmanager "platform-tools" "build-tools;33.0.2" "platforms;android-33" > /dev/null 2>&1
 
       - name: Build with Buildozer
