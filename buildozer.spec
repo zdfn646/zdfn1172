@@ -14,7 +14,9 @@ android.accept_sdk_license = True
 android.api = 33
 android.minapi = 24
 android.ndk = 25b
-
-# ★ 绝对强制路径，阻止它自己下载旧版本
+# 强制使用路径
 android.sdk_path = /usr/local/lib/android/sdk
 android.ndk_path = /usr/local/lib/android/sdk/ndk/25.1.8937393
+
+# ★ 新增：开启详细日志，方便查错
+log_level = 2
