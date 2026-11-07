@@ -6,25 +6,63 @@ on:
 
 jobs:
   build-android:
-    runs-on: ubuntu-latest
+    # 强制使用最稳定的 Ubuntu 22.04 环境
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ★ 核心步骤：使用社区维护的 Buildozer Action
-      - name: Build with Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
         with:
-          # 指定打包命令
-          command: buildozer android debug
-          # 指定 Buildozer 版本，'stable' 代表最新稳定版
-          buildozer_version: stable
+          python-version: '3.10'
 
-      # 上传生成的 APK
+      - name: Install System Dependencies
+        run: |
+          sudo apt update
+          # 彻底安装所有底层依赖，包括 ant 和 libltdl-dev
+          sudo apt install -y git zip unzip openjdk-17-jdk autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev libltdl-dev ant
+
+      - name: Install Buildozer & Cython
+        run: |
+          python3 -m pip install --upgrade pip
+          # Kivy 的硬性要求：Cython 必须是 0.29.x
+          pip3 install buildozer cython==0.29.36
+
+      - name: Setup Android SDK & Licenses
+        run: |
+          # 1. 下载最新版命令行工具
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdtools.zip
+          unzip -q cmdtools.zip -d $HOME/android-sdk/cmdline-tools
+          mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
+          
+          export PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH
+          
+          # 2. 暴力同意所有协议，安装必备组件
+          yes | sdkmanager --licenses > /dev/null 2>&1
+          sdkmanager "platform-tools" "build-tools;33.0.2" "platforms;android-33" > /dev/null 2>&1
+
+      - name: Build with Buildozer
+        run: |
+          # 彻底清理之前的缓存
+          rm -rf ~/.buildozer
+          rm -rf .buildozer
+          
+          export BUILDOZER_WARN_ON_ROOT=1
+          
+          # ★ 强制指向我们刚刚建好的 SDK 目录
+          export ANDROIDSDK=$HOME/android-sdk
+          export ANDROID_SDK_ROOT=$HOME/android-sdk
+          
+          # ★ 用 apt 装好的 ant 建立软链接，骗过 Buildozer 的下载检查
+          mkdir -p ~/.buildozer/android/platform
+          ln -sf /usr/share/ant ~/.buildozer/android/platform/apache-ant-1.9.4
+          
+          buildozer -v android debug
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: quxian-kivy-apk
-          # 这个 Action 会自动提供 APK 的路径
-          path: ${{ steps.buildozer.outputs.filename }}
+          path: bin/*.apk
