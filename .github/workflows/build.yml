@@ -22,31 +22,25 @@ jobs:
           sudo apt update
           sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
 
-      # ★ 核心修复：修复路径并暴力授权
+      # ★ 核心修复：建软链接骗过老版本找路，并强制接受协议
       - name: Fix SDK paths & Licenses
         run: |
-          # 建软链接，骗过旧版 Buildozer
           sudo mkdir -p /usr/local/lib/android/sdk/tools/bin
           sudo ln -sf /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager /usr/local/lib/android/sdk/tools/bin/sdkmanager || true
           sudo ln -sf /usr/local/lib/android/sdk/cmdline-tools/latest/bin/avdmanager /usr/local/lib/android/sdk/tools/bin/avdmanager || true
-          
-          # 暴力接受所有许可
           yes | sudo /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Install Buildozer and Cython
         run: |
           python3 -m pip install --upgrade pip
+          # 必须用 0.29.36，新版本会导致 Kivy 编译报错
           pip3 install buildozer cython==0.29.36
 
-      # ★ 核心修复：强制使用系统环境变量里预装好的 SDK 和 NDK
       - name: Build with Buildozer
         run: |
+          # ★ 删掉缓存，防止它读取之前的配置
+          rm -rf ~/.buildozer/android/platform/
           export BUILDOZER_WARN_ON_ROOT=1
-          export ANDROIDSDK=/usr/local/lib/android/sdk
-          export ANDROIDNDK=/usr/local/lib/android/sdk/ndk/25.1.8937393
-          export ANDROIDAPI=33
-          export ANDROIDMINAPI=24
-          
           buildozer -v android debug
 
       - name: Upload APK
