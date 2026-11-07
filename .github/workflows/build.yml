@@ -17,12 +17,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      # ★ 安装所有可能缺失的底层编译工具
       - name: Install System Dependencies
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
+          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev libltdl-dev
 
-      # ★ 核心修复：建软链接骗过老版本找路，并强制接受协议
       - name: Fix SDK paths & Licenses
         run: |
           sudo mkdir -p /usr/local/lib/android/sdk/tools/bin
@@ -33,15 +33,21 @@ jobs:
       - name: Install Buildozer and Cython
         run: |
           python3 -m pip install --upgrade pip
-          # 必须用 0.29.36，新版本会导致 Kivy 编译报错
+          # 必须锁定 0.29.36，这是 Kivy 构建的硬性要求
           pip3 install buildozer cython==0.29.36
 
       - name: Build with Buildozer
         run: |
-          # ★ 删掉缓存，防止它读取之前的配置
-          rm -rf ~/.buildozer/android/platform/
           export BUILDOZER_WARN_ON_ROOT=1
-          buildozer -v android debug
+          # 强制环境变量覆盖
+          export ANDROIDSDK=/usr/local/lib/android/sdk
+          export ANDROIDNDK=/usr/local/lib/android/sdk/ndk/25.1.8937393
+          export ANDROIDAPI=33
+          export ANDROIDMINAPI=24
+          
+          # 清理残留后重新打包
+          rm -rf ~/.buildozer/android/platform/
+          buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
