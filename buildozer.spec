@@ -1,5 +1,5 @@
 [app]
-title = 曲线行驶
+title = quxian
 package.name = quxian
 package.domain = com.mycompany
 source.dir = .
@@ -9,7 +9,6 @@ requirements = python3==3.10.12,kivy
 orientation = landscape
 fullscreen = 1
 
-# 基础配置
 android.accept_sdk_license = True
 android.api = 33
 android.minapi = 24
